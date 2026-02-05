@@ -1,9 +1,6 @@
 version: '3.8'
 
 services:
-  # ... (existing services)
-
-  # Shipement Tracker Service
   shipment-tracker:
     build:
       context: ./shipment_tracker

@@ -196,6 +196,7 @@ go run cmd/server/main.go
 │   └── services/        # Business logic
 ├── pkg/utils/           # Shared utilities
 ├── docs/                # API documentation
+├── iot_sensor/          # IoT Device Code (TinyGo/RPi)
 ├── mosquitto/           # MQTT broker config
 ├── Dockerfile
 ├── docker-compose.yml
