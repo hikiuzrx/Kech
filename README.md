@@ -61,17 +61,34 @@ graph TB
 
 - Docker & Docker Compose
 - Go 1.21+ (for local development)
+- TinyGo (optional, for IoT hardware deployment)
+
+### IoT Sensor Service
+
+The `iot_sensor` directory contains code for smart waste bins, designed to run on Raspberry Pi (using TinyGo) or as a simulator on any machine.
+
+**Run Simulation (Mac/Linux):**
+```bash
+cd iot_sensor
+go run cmd/device/main.go
+# This simulates a bin sensor publishing fill levels to MQTT
+```
+
+**Deploy to Raspberry Pi (TinyGo):**
+```bash
+tinygo flash -target=raspberrypi cmd/device/main.go
+```
 
 ### Run with Docker
 
 ```bash
-# Navigate to the Go backend folder
-cd /Users/macos/Desktop/waste_backend/go_backend
+# Navigate to the project root
+cd /Users/macos/Desktop/waste_backend
 
-# Copy environment template
-cp .env.example .env
+# Copy environment template (if needed, or create .env based on examples)
+# cp go_backend/.env.example .env (adjust as needed)
 
-# Start all services
+# Start all services (Backend, Shipment Tracker, MQTT, NATS, Postgres, IoT Simulator)
 docker-compose up --build
 
 # With Adminer (database UI)
