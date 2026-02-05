@@ -13,12 +13,46 @@ A robust Golang backend system for an AI & AR-Driven Smart Waste Management Plat
 - **Analytics Dashboard**: Collection statistics, driver performance, and bin metrics
 - **Docker Support**: Production-ready containerized deployment
 
+## Architecture
+
+```mermaid
+graph TB
+    subgraph "Shipment Tracker Service (New)"
+        ST_API[HTTP API]
+        SM[State Machine]
+        SC[Smart Contract]
+    end
+    
+    subgraph "Main Backend Service"
+        API[HTTP API]
+        MQTT[MQTT Client]
+        NATS_SUB[NATS Consumer]
+    end
+    
+    NATS[NATS Server]
+    BC[Blockchain]
+    IOT[Smart Bins]
+    
+    API <--> NATS
+    ST_API <--> NATS
+    
+    NATS <--> ST_API
+    NATS --> NATS_SUB
+    
+    IOT --> MQTT --> API
+    
+    SM --> SC --> BC
+```
+
 ## Tech Stack
 
 - **Language**: Go 1.21+
 - **Framework**: Gin (HTTP web framework)
 - **Database**: PostgreSQL 15
-- **Message Broker**: Eclipse Mosquitto (MQTT)
+- **Message Brokers**:
+  - Eclipse Mosquitto (MQTT) for IoT
+  - NATS JetStream for Microservices
+- **Blockchain**: Ethereum/Polygon (via Shipment Tracker)
 - **Containerization**: Docker & Docker Compose
 
 ## Quick Start
