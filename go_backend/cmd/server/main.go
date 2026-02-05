@@ -14,6 +14,7 @@ import (
 	"github.com/smartwaste/backend/internal/database"
 	"github.com/smartwaste/backend/internal/handlers"
 	"github.com/smartwaste/backend/internal/mqtt"
+	"github.com/smartwaste/backend/internal/nats"
 	"github.com/smartwaste/backend/internal/repository"
 	"github.com/smartwaste/backend/internal/services"
 )
@@ -56,6 +57,25 @@ func main() {
 		if err := mqttClient.Subscribe(); err != nil {
 			log.Printf("Warning: Failed to subscribe to MQTT topics: %v", err)
 		}
+	}
+
+	// Initialize NATS client
+	natsClient := nats.NewClient(cfg)
+	if err := natsClient.Connect(); err != nil {
+		log.Printf("Warning: Failed to connect to NATS: %v", err)
+	} else {
+		defer natsClient.Close()
+
+		// Initialize NATS event handler
+		natsHandler := nats.NewEventHandler(notificationSvc)
+
+		// Subscribe to topics
+		natsClient.Subscribe("shipment.created", natsHandler.HandleShipmentCreated)
+		natsClient.Subscribe("shipment.price.confirmed", natsHandler.HandlePriceConfirmed)
+		natsClient.Subscribe("shipment.pickup.started", natsHandler.HandlePickupStarted)
+		natsClient.Subscribe("shipment.completed", natsHandler.HandleDeliveryCompleted)
+
+		log.Println("Subscribed to NATS shipment topics")
 	}
 
 	// Initialize handlers
