@@ -1,0 +1,1087 @@
+openapi: 3.0.3
+info:
+  title: Smart Waste Management API
+  description: |
+    RESTful API for an AI & AR-Driven Smart Waste Management Platform.
+    
+    ## Features
+    - **IoT Integration**: Real-time data from ESP32-based smart bins via MQTT
+    - **User Management**: Profile and reward point tracking
+    - **Driver Management**: Route optimization and task verification
+    - **Dashboard**: Company management, pricing rules, and analytics
+    - **Valuation Engine**: AI-based waste pricing
+    
+    ## Authentication
+    Authentication endpoints are placeholders. Implement JWT or OAuth2 for production.
+  version: 1.0.0
+  contact:
+    name: Smart Waste Team
+    email: support@smartwaste.io
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Development server
+
+tags:
+  - name: Health
+    description: Health check endpoints
+  - name: Users
+    description: User management
+  - name: Drivers
+    description: Driver management and routes
+  - name: Bins
+    description: Smart bin management
+  - name: Companies
+    description: Recycling company management
+  - name: Pricing Rules
+    description: Waste valuation rules
+  - name: Analytics
+    description: Dashboard and reporting
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  mqtt_status:
+                    type: string
+                    example: connected
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  # Users
+  /users:
+    get:
+      tags:
+        - Users
+      summary: List all users
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+    post:
+      tags:
+        - Users
+      summary: Create a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '409':
+          description: Email already exists
+
+  /users/{id}:
+    get:
+      tags:
+        - Users
+      summary: Get user by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          description: User not found
+    put:
+      tags:
+        - Users
+      summary: Update user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: User updated
+    delete:
+      tags:
+        - Users
+      summary: Delete user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: User deleted
+
+  /users/{id}/rewards:
+    get:
+      tags:
+        - Users
+      summary: Get user reward points
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Reward points
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: string
+                  reward_points:
+                    type: integer
+    post:
+      tags:
+        - Users
+      summary: Add reward points
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddRewardPointsRequest'
+      responses:
+        '200':
+          description: Points added
+
+  # Drivers
+  /drivers:
+    get:
+      tags:
+        - Drivers
+      summary: List all drivers
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of drivers
+    post:
+      tags:
+        - Drivers
+      summary: Create a new driver
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDriverRequest'
+      responses:
+        '201':
+          description: Driver created
+
+  /drivers/{id}:
+    get:
+      tags:
+        - Drivers
+      summary: Get driver by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Driver details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverResponse'
+    put:
+      tags:
+        - Drivers
+      summary: Update driver
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDriverRequest'
+      responses:
+        '200':
+          description: Driver updated
+
+  /drivers/{id}/location:
+    put:
+      tags:
+        - Drivers
+      summary: Update driver location
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLocationRequest'
+      responses:
+        '200':
+          description: Location updated
+
+  /drivers/{id}/routes:
+    get:
+      tags:
+        - Drivers
+      summary: Get optimized routes
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: optimize_by
+          in: query
+          schema:
+            type: string
+            enum: [distance, fill_level]
+            default: distance
+      responses:
+        '200':
+          description: Optimized route
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RouteResponse'
+
+  /drivers/{id}/verify:
+    post:
+      tags:
+        - Drivers
+      summary: Verify task via QR code
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyTaskRequest'
+      responses:
+        '200':
+          description: Task verified
+
+  /drivers/{id}/stats:
+    get:
+      tags:
+        - Drivers
+      summary: Get driver performance statistics
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Driver statistics
+
+  # Bins
+  /bins:
+    get:
+      tags:
+        - Bins
+      summary: List all bins
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of bins
+    post:
+      tags:
+        - Bins
+      summary: Register a new bin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBinRequest'
+      responses:
+        '201':
+          description: Bin created
+
+  /bins/needs-collection:
+    get:
+      tags:
+        - Bins
+      summary: Get bins needing collection
+      parameters:
+        - name: threshold
+          in: query
+          schema:
+            type: integer
+            default: 80
+      responses:
+        '200':
+          description: Bins above threshold
+
+  /bins/statistics:
+    get:
+      tags:
+        - Bins
+      summary: Get bin statistics
+      responses:
+        '200':
+          description: Bin statistics
+
+  /bins/{id}:
+    get:
+      tags:
+        - Bins
+      summary: Get bin by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Bin details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BinResponse'
+    put:
+      tags:
+        - Bins
+      summary: Update bin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBinRequest'
+      responses:
+        '200':
+          description: Bin updated
+    delete:
+      tags:
+        - Bins
+      summary: Delete bin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Bin deleted
+
+  # Companies
+  /companies:
+    get:
+      tags:
+        - Companies
+      summary: List all companies
+      responses:
+        '200':
+          description: List of companies
+    post:
+      tags:
+        - Companies
+      summary: Create a new company
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCompanyRequest'
+      responses:
+        '201':
+          description: Company created
+
+  /companies/{id}:
+    get:
+      tags:
+        - Companies
+      summary: Get company by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Company details
+    put:
+      tags:
+        - Companies
+      summary: Update company
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCompanyRequest'
+      responses:
+        '200':
+          description: Company updated
+    delete:
+      tags:
+        - Companies
+      summary: Delete company
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Company deleted
+
+  # Pricing Rules
+  /pricing-rules:
+    get:
+      tags:
+        - Pricing Rules
+      summary: List all pricing rules
+      responses:
+        '200':
+          description: List of pricing rules
+    post:
+      tags:
+        - Pricing Rules
+      summary: Create a new pricing rule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePricingRuleRequest'
+      responses:
+        '201':
+          description: Pricing rule created
+
+  /pricing-rules/{id}:
+    get:
+      tags:
+        - Pricing Rules
+      summary: Get pricing rule by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Pricing rule details
+    put:
+      tags:
+        - Pricing Rules
+      summary: Update pricing rule
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePricingRuleRequest'
+      responses:
+        '200':
+          description: Pricing rule updated
+    delete:
+      tags:
+        - Pricing Rules
+      summary: Delete pricing rule
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Pricing rule deleted
+
+  /valuations:
+    post:
+      tags:
+        - Pricing Rules
+      summary: Calculate waste valuation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValuationRequest'
+      responses:
+        '200':
+          description: Valuation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValuationResponse'
+
+  # Analytics
+  /analytics/dashboard:
+    get:
+      tags:
+        - Analytics
+      summary: Get dashboard statistics
+      responses:
+        '200':
+          description: Dashboard statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardStats'
+
+  /analytics/bins:
+    get:
+      tags:
+        - Analytics
+      summary: Get bin analytics
+      responses:
+        '200':
+          description: Bin analytics
+
+  /analytics/drivers:
+    get:
+      tags:
+        - Analytics
+      summary: Get driver analytics
+      responses:
+        '200':
+          description: Driver analytics
+
+  /analytics/collections:
+    get:
+      tags:
+        - Analytics
+      summary: Get collection analytics
+      responses:
+        '200':
+          description: Collection analytics
+
+components:
+  schemas:
+    CreateUserRequest:
+      type: object
+      required:
+        - email
+        - password
+        - full_name
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        full_name:
+          type: string
+        phone:
+          type: string
+        address:
+          type: string
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        full_name:
+          type: string
+        phone:
+          type: string
+        address:
+          type: string
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        full_name:
+          type: string
+        phone:
+          type: string
+        address:
+          type: string
+        reward_points:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    UserListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserResponse'
+        meta:
+          $ref: '#/components/schemas/Pagination'
+
+    AddRewardPointsRequest:
+      type: object
+      required:
+        - points
+        - reason
+      properties:
+        points:
+          type: integer
+          minimum: 1
+        reason:
+          type: string
+
+    CreateDriverRequest:
+      type: object
+      required:
+        - email
+        - password
+        - full_name
+        - phone
+        - license_number
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        full_name:
+          type: string
+        phone:
+          type: string
+        license_number:
+          type: string
+        vehicle_type:
+          type: string
+        vehicle_plate:
+          type: string
+
+    UpdateDriverRequest:
+      type: object
+      properties:
+        full_name:
+          type: string
+        phone:
+          type: string
+        vehicle_type:
+          type: string
+        vehicle_plate:
+          type: string
+        is_available:
+          type: boolean
+
+    DriverResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        full_name:
+          type: string
+        phone:
+          type: string
+        license_number:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        is_available:
+          type: boolean
+        total_collections:
+          type: integer
+        average_rating:
+          type: number
+
+    UpdateLocationRequest:
+      type: object
+      required:
+        - latitude
+        - longitude
+      properties:
+        latitude:
+          type: number
+        longitude:
+          type: number
+
+    VerifyTaskRequest:
+      type: object
+      required:
+        - qr_code
+        - collection_id
+      properties:
+        qr_code:
+          type: string
+        collection_id:
+          type: string
+          format: uuid
+
+    RouteResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        driver_id:
+          type: string
+          format: uuid
+        waypoints:
+          type: array
+          items:
+            $ref: '#/components/schemas/Waypoint'
+        total_distance_km:
+          type: number
+        estimated_duration_minutes:
+          type: integer
+        status:
+          type: string
+
+    Waypoint:
+      type: object
+      properties:
+        bin_id:
+          type: string
+          format: uuid
+        device_id:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        fill_level:
+          type: integer
+        order:
+          type: integer
+
+    CreateBinRequest:
+      type: object
+      required:
+        - device_id
+        - latitude
+        - longitude
+        - waste_type
+        - capacity_liters
+      properties:
+        device_id:
+          type: string
+        location_name:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        waste_type:
+          type: string
+        capacity_liters:
+          type: integer
+        company_id:
+          type: string
+          format: uuid
+
+    UpdateBinRequest:
+      type: object
+      properties:
+        location_name:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        waste_type:
+          type: string
+        capacity_liters:
+          type: integer
+        is_active:
+          type: boolean
+
+    BinResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        device_id:
+          type: string
+        location_name:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        fill_level:
+          type: integer
+        waste_type:
+          type: string
+        is_active:
+          type: boolean
+
+    CreateCompanyRequest:
+      type: object
+      required:
+        - name
+        - email
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+        registration_number:
+          type: string
+
+    UpdateCompanyRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+        is_active:
+          type: boolean
+
+    CreatePricingRuleRequest:
+      type: object
+      required:
+        - waste_type
+        - condition
+        - price_per_kg
+        - currency
+      properties:
+        waste_type:
+          type: string
+        condition:
+          type: string
+        price_per_kg:
+          type: number
+        currency:
+          type: string
+          maxLength: 3
+        min_weight_kg:
+          type: number
+        max_weight_kg:
+          type: number
+        company_id:
+          type: string
+          format: uuid
+
+    UpdatePricingRuleRequest:
+      type: object
+      properties:
+        waste_type:
+          type: string
+        condition:
+          type: string
+        price_per_kg:
+          type: number
+        currency:
+          type: string
+        is_active:
+          type: boolean
+
+    ValuationRequest:
+      type: object
+      required:
+        - waste_type
+        - condition
+        - weight_kg
+      properties:
+        waste_type:
+          type: string
+        condition:
+          type: string
+        weight_kg:
+          type: number
+
+    ValuationResponse:
+      type: object
+      properties:
+        waste_type:
+          type: string
+        condition:
+          type: string
+        weight_kg:
+          type: number
+        price_per_kg:
+          type: number
+        total_price:
+          type: number
+        currency:
+          type: string
+        message:
+          type: string
+
+    DashboardStats:
+      type: object
+      properties:
+        total_bins:
+          type: integer
+        bins_needing_collection:
+          type: integer
+        average_fill_level:
+          type: number
+        today_collections:
+          type: integer
+        active_drivers:
+          type: integer
+        timestamp:
+          type: string
+          format: date-time
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+        total_pages:
+          type: integer

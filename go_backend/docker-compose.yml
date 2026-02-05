@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: smartwaste-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: smartwaste
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./internal/database/migrations:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d smartwaste" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smartwaste-network
+    restart: unless-stopped
+
+  # Eclipse Mosquitto MQTT Broker
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: smartwaste-mqtt
+    volumes:
+      - ./mosquitto/config:/mosquitto/config:ro
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_logs:/mosquitto/log
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    healthcheck:
+      test: [ "CMD", "mosquitto_sub", "-t", "$$SYS/#", "-C", "1", "-i", "healthcheck", "-W", "3" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - smartwaste-network
+    restart: unless-stopped
+
+  # Smart Waste Backend API
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smartwaste-api
+    environment:
+      SERVER_PORT: "8080"
+      SERVER_MODE: "release"
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: smartwaste
+      DB_SSLMODE: disable
+      MQTT_BROKER: mosquitto
+      MQTT_PORT: "1883"
+      MQTT_CLIENT_ID: smartwaste-backend
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mosquitto:
+        condition: service_healthy
+    networks:
+      - smartwaste-network
+    restart: unless-stopped
+
+  # Adminer - Database Management UI (optional)
+  adminer:
+    image: adminer:4
+    container_name: smartwaste-adminer
+    ports:
+      - "8081:8080"
+    depends_on:
+      - postgres
+    networks:
+      - smartwaste-network
+    restart: unless-stopped
+    profiles:
+      - tools
+
+networks:
+  smartwaste-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  mosquitto_data:
+  mosquitto_logs:
